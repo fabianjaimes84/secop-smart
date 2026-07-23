@@ -2,63 +2,78 @@
 
 SECOP Smart es una plataforma desarrollada para facilitar la consulta, análisis y seguimiento de procesos de contratación pública publicados en **SECOP II**, utilizando la API de Datos Abiertos de Colombia.
 
-El objetivo es automatizar la búsqueda de oportunidades de contratación, analizar la información de los procesos y generar reportes que apoyen la toma de decisiones.
+El proyecto busca automatizar la búsqueda de oportunidades de contratación, centralizar la información de los procesos y servir como base para futuras funcionalidades como exportación de reportes, análisis documental mediante Inteligencia Artificial y seguimiento de procesos contractuales.
 
 ---
 
 # 📌 Características
 
+## Funcionalidades implementadas
+
 - Consulta de procesos de contratación en SECOP II.
-- Filtros dinámicos para la búsqueda de procesos.
-- Catálogos dinámicos para alimentar los filtros del frontend.
-- Arquitectura desacoplada mediante FastAPI.
-- Preparado para integración con Angular.
-- Base para exportación a Excel, Word y PDF.
-- Preparado para futuras funcionalidades con Inteligencia Artificial.
+- Búsqueda por palabra clave.
+- Filtro por estado del proceso.
+- Filtro por modalidad de contratación.
+- Filtro por fecha de publicación.
+- Filtro por fecha de recepción de ofertas.
+- Catálogos dinámicos para listas desplegables.
+- Arquitectura por capas.
+- Repository Pattern.
+- Transformación de datos mediante modelos Pydantic.
+- API REST documentada automáticamente mediante Swagger.
+
+## Funcionalidades planeadas
+
+- Exportación de resultados a Excel.
+- Exportación a Word y PDF.
+- Descarga automática de documentos del proceso.
+- Dashboard de indicadores.
+- Seguimiento de procesos.
+- Análisis documental mediante Inteligencia Artificial.
 
 ---
 
 # 🏗️ Arquitectura
 
-El proyecto sigue una arquitectura por capas que permite mantener una clara separación de responsabilidades.
+El proyecto implementa una arquitectura por capas para garantizar una adecuada separación de responsabilidades y facilitar el mantenimiento del sistema.
 
 ```text
-Angular
-    │
-    ▼
-FastAPI
-    │
-    ▼
-Services
-    │
-    ▼
-Repositories
-    │
-    ▼
-API Datos Abiertos SECOP II
+                Angular
+                   │
+                   ▼
+              FastAPI (API)
+                   │
+                   ▼
+               Services
+                   │
+                   ▼
+             Repositories
+                   │
+                   ▼
+      API Datos Abiertos SECOP II
 ```
 
 ## Capas
 
 ### API (Routes)
 
-Recibe las solicitudes HTTP y expone los endpoints del sistema.
+Expone los endpoints REST y recibe las solicitudes HTTP.
 
 ### Services
 
-Contiene la lógica de negocio y transforma la información antes de enviarla al cliente.
+Contiene la lógica de negocio y transforma la información obtenida desde el repositorio.
 
 ### Repositories
 
-Gestiona la comunicación con la API de Datos Abiertos de SECOP II.
+Gestiona la comunicación con la API pública de Datos Abiertos de SECOP II.
 
 ### Models
 
-Define los modelos de datos mediante Pydantic.
+Define los modelos de datos utilizando Pydantic.
 
 ### Core
 
-Centraliza la configuración del proyecto.
+Centraliza la configuración del proyecto y las variables de entorno.
 
 ---
 
@@ -95,10 +110,14 @@ secop-smart/
 │   │   ├── models/
 │   │   ├── repositories/
 │   │   ├── services/
+│   │   ├── __init__.py
 │   │   └── main.py
 │   │
-│   ├── .env
-│   └── requirements.txt
+│   ├── requirements.txt
+│   └── .env
+│
+├── docs/
+│   └── Arquitectura_Funcional_SECOP_Smart.md
 │
 ├── frontend/
 │
@@ -116,7 +135,7 @@ secop-smart/
 git clone https://github.com/TU-USUARIO/secop-smart.git
 ```
 
-## 2. Ingresar al proyecto
+## 2. Ingresar al backend
 
 ```bash
 cd secop-smart/backend
@@ -144,10 +163,11 @@ pip install -r requirements.txt
 
 ## 5. Configurar variables de entorno
 
-Crear un archivo `.env`
+Crear el archivo `.env`
 
 ```env
 SECOP_API_URL=https://www.datos.gov.co/resource/p6dx-8zbt.json
+TIMEOUT=30
 ```
 
 ## 6. Ejecutar el servidor
@@ -166,19 +186,15 @@ uvicorn app.main:app --reload
 GET /procesos
 ```
 
+Obtiene procesos de contratación utilizando filtros básicos.
+
 ### Parámetros
 
-| Parámetro | Descripción |
-|-----------|-------------|
-| limit | Número de registros |
-| buscar | Palabra clave |
-| estado | Estado del proceso |
-
-### Ejemplo
-
-```http
-GET /procesos?buscar=puente&estado=Presentación de oferta&limit=20
-```
+| Parámetro | Tipo |
+|-----------|------|
+| limit | integer |
+| buscar | string |
+| estado | string |
 
 ---
 
@@ -188,10 +204,12 @@ GET /procesos?buscar=puente&estado=Presentación de oferta&limit=20
 GET /catalogos/{campo}
 ```
 
+Permite obtener los valores únicos de un campo para alimentar listas desplegables.
+
 Ejemplos
 
 ```http
-GET /catalogos/estado_del_procedimiento
+GET /catalogos/estado_resumen
 ```
 
 ```http
@@ -202,25 +220,85 @@ GET /catalogos/modalidad_de_contratacion
 GET /catalogos/departamento_entidad
 ```
 
-Este endpoint devuelve los valores únicos del campo solicitado para alimentar listas desplegables en el frontend.
+---
+
+## Búsqueda avanzada
+
+```http
+POST /busqueda
+```
+
+Permite realizar búsquedas utilizando múltiples filtros simultáneamente.
+
+### Body
+
+| Campo | Tipo |
+|--------|------|
+| buscar | string |
+| estado | string |
+| tipo_proceso | string |
+| fecha_publicacion_desde | date |
+| fecha_publicacion_hasta | date |
+| fecha_presentacion_desde | date |
+| fecha_presentacion_hasta | date |
+| limit | integer |
+
+Ejemplo
+
+```json
+{
+  "buscar": "puente",
+  "estado": "Presentación de oferta",
+  "tipo_proceso": "Licitación pública",
+  "fecha_publicacion_desde": "2026-01-01",
+  "fecha_publicacion_hasta": "2026-01-31",
+  "fecha_presentacion_desde": null,
+  "fecha_presentacion_hasta": null,
+  "limit": 20
+}
+```
 
 ---
 
-# 📊 Estado actual del proyecto
+# 📊 Estado del proyecto
 
-## Backend
+## ✅ Sprint 1 - Backend (Finalizado)
 
-- ✅ Arquitectura FastAPI
-- ✅ Repository Pattern
-- ✅ Configuración centralizada
-- ✅ Integración con SECOP II
-- ✅ Consulta de procesos
-- ✅ Modelos Pydantic
-- ✅ Catálogos dinámicos
+### Arquitectura
 
-## Frontend
+- Arquitectura por capas.
+- Repository Pattern.
+- Modelos Pydantic.
 
-- ⏳ En desarrollo
+### Integración
+
+- Integración con la API pública de SECOP II.
+- Transformación de datos del modelo de SECOP al modelo interno.
+
+### Funcionalidades implementadas
+
+- Consulta de procesos.
+- Catálogos dinámicos.
+- Búsqueda avanzada.
+- Filtro por estado.
+- Filtro por modalidad.
+- Filtro por fecha de publicación.
+- Filtro por fecha de recepción de ofertas.
+- Construcción dinámica de parámetros de búsqueda.
+
+---
+
+## 🚧 Sprint 2 - Frontend (En desarrollo)
+
+Próximas actividades:
+
+- Layout principal.
+- Header.
+- Sidebar.
+- Formulario de búsqueda.
+- Tabla de resultados.
+- Integración con la API.
+- Paginación.
 
 ---
 
@@ -229,37 +307,42 @@ Este endpoint devuelve los valores únicos del campo solicitado para alimentar l
 ## Backend
 
 - [x] Arquitectura base
+- [x] Repository Pattern
 - [x] Integración con SECOP II
 - [x] Consulta de procesos
 - [x] Catálogos dinámicos
-- [ ] Filtros dinámicos avanzados
+- [x] Búsqueda avanzada
+- [x] Filtros por estado
+- [x] Filtros por modalidad
+- [x] Filtros por fechas
 - [ ] Paginación
 - [ ] Exportación a Excel
 - [ ] Descarga de documentos
-- [ ] Análisis documental
+- [ ] Análisis documental mediante IA
 
 ## Frontend
 
 - [ ] Angular
+- [ ] Layout principal
 - [ ] Dashboard
-- [ ] Búsqueda avanzada
-- [ ] Visualización de procesos
-- [ ] Exportación de resultados
+- [ ] Formulario de búsqueda
+- [ ] Tabla de resultados
+- [ ] Consumo de la API
+- [ ] Paginación
 
 ## Inteligencia Artificial
 
-- [ ] Resumen automático de procesos
-- [ ] Análisis de pliegos
-- [ ] Comparación de documentos
-- [ ] Generación de observaciones técnicas
+- [ ] Resumen automático de procesos.
+- [ ] Clasificación de documentos.
+- [ ] Comparación de pliegos.
+- [ ] Generación de observaciones técnicas.
+- [ ] Asistente para análisis contractual.
 
 ---
 
 # 📚 Documentación
 
-FastAPI genera automáticamente la documentación de la API.
-
-Swagger UI
+Swagger
 
 ```
 http://127.0.0.1:8000/docs
@@ -273,9 +356,27 @@ http://127.0.0.1:8000/redoc
 
 ---
 
+# 📦 Versiones
+
+**Versión actual**
+
+```
+v0.1.0
+```
+
+## Historial
+
+| Versión | Estado |
+|----------|--------|
+| v0.1.0 | Backend MVP finalizado |
+
+---
+
 # 🤝 Contribuciones
 
-Actualmente este proyecto se encuentra en desarrollo. Las contribuciones serán bienvenidas una vez se publique la primera versión estable.
+Actualmente el proyecto se encuentra en desarrollo activo.
+
+Las contribuciones serán bienvenidas una vez se publique la primera versión estable.
 
 ---
 
@@ -289,6 +390,6 @@ Este proyecto se distribuye bajo la licencia MIT.
 
 **Fabian Jaimes**
 
-Ingeniero de Sistemas con experiencia en el desarrollo de soluciones tecnológicas orientadas a la automatización de procesos, análisis de información y transformación digital.
+Ingeniero de Sistemas.
 
 Proyecto desarrollado con fines académicos y profesionales para facilitar la consulta, análisis y seguimiento de procesos de contratación pública publicados en SECOP II.

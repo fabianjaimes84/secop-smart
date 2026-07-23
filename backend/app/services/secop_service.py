@@ -2,6 +2,7 @@ import httpx
 
 from app.repositories.secop_repository import SecopRepository
 from app.models.proceso import Proceso
+from app.models.busqueda import BusquedaProceso
 
 
 class SecopService:
@@ -33,7 +34,7 @@ class SecopService:
                     numero_proceso=item.get("referencia_del_proceso", ""),
                     objeto=item.get("nombre_del_procedimiento", ""),
                     modalidad=item.get("modalidad_de_contratacion", ""),
-                    estado=item.get("estado_del_procedimiento", ""),
+                    estado=item.get("estado_resumen", ""),
                     fecha_publicacion=item.get("fecha_de_publicacion", ""),
                 )
 
@@ -51,3 +52,25 @@ class SecopService:
         datos = self.repository.obtener_catalogo(campo)
 
         return [item[campo] for item in datos if item.get(campo)]
+
+    def buscar_procesos(self, filtros: BusquedaProceso):
+        datos = self.repository.buscar_procesos(filtros)
+
+        procesos = []
+
+        for item in datos:
+            proceso = Proceso(
+                entidad=item.get("entidad", ""),
+                nit_entidad=item.get("nit_entidad", ""),
+                departamento=item.get("departamento_entidad", ""),
+                ciudad=item.get("ciudad_entidad", ""),
+                numero_proceso=item.get("referencia_del_proceso", ""),
+                objeto=item.get("nombre_del_procedimiento", ""),
+                modalidad=item.get("modalidad_de_contratacion", ""),
+                estado=item.get("estado_resumen", ""),
+                fecha_publicacion=item.get("fecha_de_publicacion_del", ""),
+            )
+
+            procesos.append(proceso)
+
+        return procesos
